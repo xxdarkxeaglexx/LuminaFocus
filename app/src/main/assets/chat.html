@@ -3,6 +3,8 @@
 <title>Lumina private chat</title>
 <style>
 *{box-sizing:border-box}body{margin:auto;max-width:540px;padding:20px;font:17px/1.45 system-ui;color:#eaf3ff;background:#102337}h1{font-size:28px}button,textarea,input{font:inherit;width:100%;padding:12px;border-radius:10px;margin:5px 0}button{background:#abe5d5;color:#092c2e;border:0;font-weight:650}textarea{height:76px}small{color:#b3c8db}img{max-width:100%;max-height:45vh}#inbox{overflow-wrap:anywhere;white-space:pre-wrap}strong{display:block;font:700 23px monospace;letter-spacing:2px}button:disabled{opacity:.5}
+
+html{min-height:100%;background:linear-gradient(145deg,#173956,#071429 78%)}body{background:transparent}section{background:linear-gradient(135deg,#1b3959ef,#10243ce8);border:1px solid #395575;border-radius:20px;padding:18px;margin:14px 0}textarea,input{color:#e8f1ff;border:1px solid #527191;background:#0c2037}button{background:linear-gradient(110deg,#a7ddff,#becfff);color:#10253c}strong{overflow-wrap:anywhere}
 </style><h1>Private chat</h1><p id="status" role="status">Connect both phones to the same Wi-Fi.</p>
 <section id="setup"><button id="host">Create invite</button><label for="input">Paste the other phone’s invite or reply here</label><textarea id="input" autocomplete="off" spellcheck="false"></textarea><button id="apply">Use pairing code</button>
 <div id="outbox" hidden><label for="output">Send this pairing code to the other phone</label><textarea id="output" readonly></textarea><button id="copy">Copy pairing code</button></div></section>
