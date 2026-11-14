@@ -26,3 +26,13 @@ jobs:
         with:
           name: LuminaFocus-Preview-APK
           path: app/build/outputs/apk/debug/*.apk
+  chat-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright pillow
+      - run: python -m playwright install --with-deps chromium
+      - run: python tests/chat_session.py
