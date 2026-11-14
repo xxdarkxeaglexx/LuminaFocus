@@ -26,7 +26,7 @@ def update(data):
                     if value not in names:names.append(value)
                     a=attrs[key];put(chunk,a+8,names.index(value));put(chunk,a+16,names.index(value))
                 if kind=='manifest':
-                    assign('package','com.lumina.focus.unified');assign('versionName','2.1');put(chunk,attrs['versionCode']+16,21)
+                    assign('package','com.lumina.focus.unified');assign('versionName','2.2');put(chunk,attrs['versionCode']+16,22)
                 if kind=='application':assign('label','Lumina Focus One')
                 if kind in ('activity','service','receiver') and val('name').startswith('.'):assign('name','com.lumina.focus'+val('name'))
                 if kind=='activity' and val('name')=='com.lumina.focus.Home':

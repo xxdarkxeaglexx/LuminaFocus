@@ -34,6 +34,12 @@ public class Hub extends Activity {
         scroll.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i;});
         page=new LinearLayout(this);page.setOrientation(1);page.setPadding(dp(20),dp(26),dp(20),dp(22));scroll.addView(page);
         TextView title=type("Lumina Focus",36,Color.WHITE,true);title.setPadding(0,0,0,dp(22));page.addView(title);
+        Button share=new Button(this);
+        share.setText("Share app");share.setAllCaps(false);share.setTextColor(Color.WHITE);
+        share.setBackground(glass(0xff295c80,0xff173756,16));
+        LinearLayout.LayoutParams shareLayout=new LinearLayout.LayoutParams(-1,dp(48));
+        shareLayout.bottomMargin=dp(16);page.addView(share,shareLayout);
+        share.setOnClickListener(v->AppShare.start(this,share));
         card("Focus & protection","Focus sessions, schedules and app controls","com.lumina.focus.Home",false);
         card("Privacy & VPN","Network protection and Tor settings","com.lumina.focus.Privacy",false);
         card("Private browser","Browse with the original Lumina media tools","com.lumina.focus.Reader",false);
