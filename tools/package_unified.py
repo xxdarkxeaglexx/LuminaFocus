@@ -26,7 +26,7 @@ def update(data):
                     if value not in names:names.append(value)
                     a=attrs[key];put(chunk,a+8,names.index(value));put(chunk,a+16,names.index(value))
                 if kind=='manifest':
-                    assign('package','com.lumina.focus.unified');assign('versionName','2.0');put(chunk,attrs['versionCode']+16,20)
+                    assign('package','com.lumina.focus.unified');assign('versionName','2.1');put(chunk,attrs['versionCode']+16,21)
                 if kind=='application':assign('label','Lumina Focus One')
                 if kind in ('activity','service','receiver') and val('name').startswith('.'):assign('name','com.lumina.focus'+val('name'))
                 if kind=='activity' and val('name')=='com.lumina.focus.Home':
@@ -63,4 +63,5 @@ with ZipFile(sys.argv[1]) as original,ZipFile(sys.argv[2]) as preview,ZipFile(sy
         out.writestr(i,val)
     for idx,n in enumerate(sorted(n for n in preview.namelist() if n.startswith('classes') and n.endswith('.dex')),2):
         out.writestr('classes%d.dex'%idx,preview.read(n),ZIP_DEFLATED)
-    out.writestr('assets/chat.html',preview.read('assets/chat.html'),ZIP_DEFLATED)
+    for asset in ('assets/chat.html','assets/youtube-filter.js'):
+        out.writestr(asset,preview.read(asset),ZIP_DEFLATED)

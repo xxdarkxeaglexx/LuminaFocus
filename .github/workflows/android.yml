@@ -42,3 +42,4 @@ jobs:
       - run: pip install playwright pillow
       - run: python -m playwright install --with-deps chromium
       - run: python tests/chat_session.py
+      - run: python tests/youtube_filter.py

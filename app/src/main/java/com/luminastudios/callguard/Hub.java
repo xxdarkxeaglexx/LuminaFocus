@@ -37,7 +37,7 @@ public class Hub extends Activity {
         card("Focus & protection","Focus sessions, schedules and app controls","com.lumina.focus.Home",false);
         card("Privacy & VPN","Network protection and Tor settings","com.lumina.focus.Privacy",false);
         card("Private browser","Browse with the original Lumina media tools","com.lumina.focus.Reader",false);
-        card("YouTube","Watch in Lumina with ad-request filtering","com.luminastudios.callguard.FocusBrowser",true);
+        card("YouTube","Watch with automatic ad skipping and muting","com.luminastudios.callguard.FocusBrowser",true);
         card("Private chat","Encrypted, disappearing texts and photos","com.luminastudios.callguard.PrivateChat",false);
         card("Call Guard","Spam protection, blocked numbers and call settings","com.lumina.focus.CallGuard",false);
         card("Phone & messages","Call, compose a text or check a suspicious message","com.lumina.focus.Communicate",false);
