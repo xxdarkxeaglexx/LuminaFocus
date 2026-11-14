@@ -1,1 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:label="Lumina Focus" android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="false" android:allowBackup="false"><activity android:name=".YouTubeBrowserActivity" android:exported="false"/><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="36"/>
+ <uses-feature android:name="android.hardware.telephony" android:required="true"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <application android:label="Lumina Focus Preview" android:icon="@drawable/shield" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false">
+ <activity android:name="com.luminastudios.callguard.PrivateChat" android:exported="false"/>
+ <activity android:name="com.luminastudios.callguard.FocusBrowser" android:exported="false"/>
+ <activity android:name="com.luminastudios.callguard.Home" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+ <service android:name="com.luminastudios.callguard.Screen" android:permission="android.permission.BIND_SCREENING_SERVICE" android:exported="true"><intent-filter><action android:name="android.telecom.CallScreeningService"/></intent-filter></service>
+ </application></manifest>

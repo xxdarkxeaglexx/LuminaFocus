@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob:; form-action 'none'; base-uri 'none'">
+<title>Lumina private chat</title>
+<style>
+*{box-sizing:border-box}body{margin:auto;max-width:540px;padding:20px;font:17px/1.45 system-ui;color:#eaf3ff;background:#102337}h1{font-size:28px}button,textarea,input{font:inherit;width:100%;padding:12px;border-radius:10px;margin:5px 0}button{background:#abe5d5;color:#092c2e;border:0;font-weight:650}textarea{height:76px}small{color:#b3c8db}img{max-width:100%;max-height:45vh}#inbox{overflow-wrap:anywhere;white-space:pre-wrap}strong{display:block;font:700 23px monospace;letter-spacing:2px}button:disabled{opacity:.5}
+</style><h1>Private chat</h1><p id="status" role="status">Connect both phones to the same Wi-Fi.</p>
+<section id="setup"><button id="host">Create invite</button><label for="input">Paste the other phone’s invite or reply here</label><textarea id="input" autocomplete="off" spellcheck="false"></textarea><button id="apply">Use pairing code</button>
+<div id="outbox" hidden><label for="output">Send this pairing code to the other phone</label><textarea id="output" readonly></textarea><button id="copy">Copy pairing code</button></div></section>
+<section id="verify" hidden><p>Compare every group of this security code in person or by voice. Confirm only if both screens match.</p><strong id="digits"></strong><button id="confirm">Both phones match</button></section>
+<section id="chat" hidden><label for="message">Private message</label><textarea id="message" maxlength="2000" autocomplete="off" spellcheck="false"></textarea><button id="send">Send text</button><label>Send a view-once photo<input id="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Open each item once. It disappears after 10 seconds or when you leave the screen. The sender’s original photo stays on their phone.</small><div id="inbox"></div></section>
+<button id="end" hidden>End session</button>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), statusLine=t=>{$('status').textContent=t};
+let pc,channel,confirmed=false,otherConfirmed=false,closed=false,busy=false;
+const pending=new Set();
+function discard(){for(const remove of [...pending])remove()}
+function stop(reason){
+ if(closed)return;closed=true;discard();
+ if(channel)channel.close();if(pc)pc.close();
+ for(const id of ['input','output','message','photo'])$(id).value='';
+ for(const id of ['setup','chat','verify','end'])$(id).hidden=true;
+ statusLine(reason+' Reopen private chat to start again.');
+}
+function start(){
+ if(pc)throw Error('A pairing session is already open.');
+ pc=new RTCPeerConnection({iceServers:[]});
+ pc.onconnectionstatechange=()=>{if(['disconnected','failed','closed'].includes(pc.connectionState))stop('Connection ended.')};
+ pc.ondatachannel=e=>{if(channel||e.channel.label!=='lumina'){stop('Unexpected connection.');return}wire(e.channel)};
+ $('end').hidden=false;$('host').disabled=true;
+}
+async function code(){
+ await pc.setLocalDescription();
+ if(pc.iceGatheringState!=='complete')await new Promise((ok,fail)=>{
+ const timer=setTimeout(()=>{pc.removeEventListener('icegatheringstatechange',watch);fail(Error('Wi-Fi pairing timed out.'))},12000);
+ function watch(){if(pc.iceGatheringState==='complete'){clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',watch);ok()}}
+ pc.addEventListener('icegatheringstatechange',watch);watch()});
+ if(closed)return;
+ $('output').value=btoa(JSON.stringify(pc.localDescription));$('outbox').hidden=false;
+}
+async function useCode(){
+ const raw=$('input').value.trim();if(!raw||raw.length>64000)throw Error('Paste a complete pairing code.');
+ let desc;try{desc=JSON.parse(atob(raw))}catch{throw Error('This pairing code is incomplete.')}
+ if(!desc||typeof desc.sdp!=='string'||!['offer','answer'].includes(desc.type))throw Error('Invalid pairing code.');
+ if(desc.type==='offer'){start();await pc.setRemoteDescription(desc);await code();if(channel?.readyState!=='open')statusLine('Send your reply code to the first phone.')}
+ else{if(pc?.signalingState!=='have-local-offer')throw Error('Create an invite first.');await pc.setRemoteDescription(desc);statusLine('Connecting on Wi-Fi…')}
+ $('input').value='';
+}
+function fingerprint(sdp){const match=sdp.match(/^a=fingerprint:sha-256 ([0-9a-f:]+)\s*$/im);if(!match||match[1].length!==95)throw Error('Missing identity');return match[1].toUpperCase()}
+function ready(){if(confirmed&&otherConfirmed&&!closed){$('verify').hidden=true;$('chat').hidden=false;statusLine('Paired · encrypted chat')}}
+function wire(c){
+ channel=c;c.binaryType='arraybuffer';c.onclose=()=>stop('Session ended.');c.onerror=()=>stop('Connection error.');
+ c.onopen=async()=>{try{
+ const ids=[fingerprint(pc.localDescription.sdp),fingerprint(pc.remoteDescription.sdp)].sort().join('/');
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids));
+ if(closed)return;
+ $('digits').textContent=Array.from(new Uint8Array(digest).slice(0,16), b=>b.toString(16).padStart(2,'0')).join('').match(/.{4}/g).join(' ');
+ $('setup').hidden=true;$('input').value='';$('output').value='';$('verify').hidden=false;statusLine('Verify your connection.');
+ }catch{stop('Could not verify connection.')}};
+ c.onmessage=e=>{
+ if(e.data==='verified'){otherConfirmed=true;ready();return}
+ if(!confirmed||!otherConfirmed||pending.size>=20){stop('Session limit reached or pairing incomplete.');return}
+ if(document.hidden)return;
+ if(typeof e.data==='string'&&e.data.startsWith('t:')&&e.data.length<=2002){deliver(e.data.slice(2),false);return}
+ if(e.data instanceof ArrayBuffer&&e.data.byteLength<=48000){const b=new Uint8Array(e.data);if(b[0]===255&&b[1]===216){deliver(new Blob([b],{type:'image/jpeg'}),true);return}}
+ stop('Invalid item.');
+ };
+}
+function deliver(item,photo){
+ const box=document.createElement('div'),btn=document.createElement('button');let url,timer;
+ function remove(){clearTimeout(timer);box.remove();item=null;if(url)URL.revokeObjectURL(url);pending.delete(remove)}
+ pending.add(remove);btn.textContent=photo?'Open photo once':'Open text once';
+ btn.onclick=()=>{btn.remove();if(photo){const img=new Image();url=URL.createObjectURL(item);img.src=url;img.alt='Private photo';box.append(img)}else box.textContent=item;
+ item=null;clearTimeout(timer);timer=setTimeout(remove,10000);const close=document.createElement('button');close.textContent='Dismiss';close.onclick=remove;box.append(close)};
+ box.append(btn);$('inbox').append(box);timer=setTimeout(remove,120000);
+}
+function transmit(data){if(closed||channel?.readyState!=='open'||!confirmed||!otherConfirmed)throw Error('Pair both phones first.');
+ if(channel.bufferedAmount>96000)throw Error('Wait for the previous item to send.');channel.send(data)}
+async function sendPhoto(file){
+ if(!file)return;if(file.size>12*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Choose a JPEG, PNG or WebP under 12 MB.');
+ const bitmap=await createImageBitmap(file,{resizeWidth:480,resizeQuality:'high'});
+ try{const canvas=document.createElement('canvas'),scale=Math.min(1,480/Math.max(bitmap.width,bitmap.height));
+ canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+ for(const quality of [.72,.48,.25]){const blob=await new Promise(ok=>canvas.toBlob(ok,'image/jpeg',quality));if(blob&&blob.size<=48000){transmit(await blob.arrayBuffer());statusLine('Photo sent.');return}}
+ throw Error('Photo too detailed. Choose another.')}finally{bitmap.close()}
+}
+function action(id,fn){$(id).onclick=async()=>{if(busy)return;busy=true;try{await fn()}catch(e){statusLine(e.message||'Could not complete action.')}finally{busy=false}}}
+action('host',async()=>{start();wire(pc.createDataChannel('lumina'));await code();statusLine('Send your invite, then paste the reply.')});
+action('apply',useCode);action('copy',async()=>{try{await navigator.clipboard.writeText($('output').value);statusLine('Pairing code copied.')}catch{$('output').focus();$('output').select();statusLine('Press and hold the selected code to copy.')}});
+action('confirm',()=>{channel.send('verified');confirmed=true;$('confirm').disabled=true;statusLine('Waiting for the other phone to confirm.');ready()});
+action('send',()=>{const text=$('message').value.trim();if(!text)return;transmit('t:'+text);$('message').value='';statusLine('Text sent.')});
+$('photo').onchange=async()=>{const f=$('photo').files[0];$('photo').value='';try{await sendPhoto(f)}catch(e){statusLine(e.message)}};
+$('end').onclick=()=>stop('Session closed.');
+document.addEventListener('visibilitychange',()=>{if(document.hidden){discard();$('message').value=''}});
+document.addEventListener('freeze',discard);
+window.addEventListener('pagehide',()=>stop('Session closed.'));
+</script></html>
